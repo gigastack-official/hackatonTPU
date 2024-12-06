@@ -8,7 +8,7 @@ from .views import (
     MoistureSensorViewSet, OverflowSensorViewSet, LeakSensorViewSet, LOSensorViewSet,
     ReedSwitch1ViewSet, ReedSwitch2ViewSet, DistanceSensorViewSet,
     CurrentSensorViewSet, TemperatureSensorViewSet, GyroscopeViewSet,
-    AccelerometerViewSet, FanViewSet, CommandView
+    AccelerometerViewSet, FanViewSet, CommandView, CustomTokenObtainPairView
 )
 
 router = routers.DefaultRouter()
@@ -30,9 +30,10 @@ router.register(r'gyroscope', GyroscopeViewSet, basename='gyroscope')
 router.register(r'accelerometer', AccelerometerViewSet, basename='accelerometer')
 router.register(r'fan', FanViewSet, basename='fan')
 
+
 urlpatterns = [
     path('register/', RegisterView.as_view(), name='register'),
-    path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('token/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('send-command/', CommandView.as_view(), name='send-command'),  # Новый эндпоинт
     path('', include(router.urls)),

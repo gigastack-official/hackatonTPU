@@ -1,9 +1,11 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+
 from .models import (
     LightSensor, ColorSensor, WaterFlowSensor, MoistureSensor, OverflowSensor,
     LeakSensor, LOSensor, ReedSwitch1, ReedSwitch2, DistanceSensor,
-    CurrentSensor, TemperatureSensor, Gyroscope, Accelerometer, Fan
+    CurrentSensor, TemperatureSensor, Gyroscope, Accelerometer, Fan, Alert
 )
 
 class UserSerializer(serializers.ModelSerializer):
@@ -22,6 +24,19 @@ class UserSerializer(serializers.ModelSerializer):
         user.save()
         return user
 
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+
+    def validate(self, attrs):
+        data = super().validate(attrs)
+        user = self.user
+        if user.is_superuser:
+            role = 'superadmin'
+        elif user.is_staff:
+            role = 'admin'
+        else:
+            role = 'user'
+        data['role'] = role
+        return data
 class LightSensorSerializer(serializers.ModelSerializer):
     class Meta:
         model = LightSensor
@@ -112,6 +127,16 @@ class CommandSerializer(serializers.Serializer):
     servo2 = serializers.BooleanField(required=False)
     auto_light = serializers.BooleanField(required=False)
     brightness = serializers.FloatField(required=False)
+    fan = serializers.BooleanField(required=False)
+    ventilation = serializers.BooleanField(required=False)
+    earthquake = serializers.BooleanField(required=False)
     user_name = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+
     def validate_user_name(self, value):
         return value
+
+class AlertSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Alert
+        fields = ['alert_type', 'is_active', 'received_from']
+        read_only_fields = ['timestamp']

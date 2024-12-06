@@ -9,9 +9,12 @@ https://docs.djangoproject.com/en/4.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
 """
-
+import os
 from pathlib import Path
+from dotenv import load_dotenv
 
+# Загрузка переменных окружения из .env файла (если существует)
+load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -20,12 +23,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-*=%63ai6vhs#^!&_e3s=5&*o@u=3uwxc*@g$*hp&$3-h2*&qll'
+
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
 
-ALLOWED_HOSTS = ['192.168.0.77', 'localhost', '127.0.0.1']
+# Получение переменных окружения
+DEBUG = int(os.environ.get('DEBUG', default=0))
+SECRET_KEY = os.environ.get('SECRET_KEY', default='unsafe-secret-key')
+ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', 'localhost').split(' ')
 
 
 
@@ -81,14 +86,17 @@ WSGI_APPLICATION = 'backendApp.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
+
+# ...
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'hacatonTPU',
-        'USER': 'postgres',
-        'PASSWORD': '',
-        'HOST': 'localhost',
-        'PORT': '5432',
+        'NAME': os.environ.get('DB_NAME', 'hacatonTPU'),
+        'USER': os.environ.get('DB_USER', 'postgres'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', ''),
+        'HOST': os.environ.get('DB_HOST', 'localhost'),
+        'PORT': os.environ.get('DB_PORT', '5432'),
     }
 }
 
@@ -161,10 +169,8 @@ SWAGGER_SETTINGS = {
     },
 }
 
-COMMAND_AUTH_TEXT = 'your_secret_auth_text'
-
 # Список ESP-устройств
 ESP_DEVICES = [
-    "http://192.168.0.100/command",
+    "http://192.168.0.234:8000/command",
     # Добавьте остальные устройства
 ]

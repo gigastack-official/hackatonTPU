@@ -1,3 +1,4 @@
+from django.contrib.auth.models import User
 from django.db import models
 
 class LightSensor(models.Model):
@@ -124,13 +125,34 @@ class Command(models.Model):
         ('servo2', 'Серво №2'),
         ('auto_light', 'Авто-свет'),
         ('brightness', 'Яркость'),
-        ('authorization', 'Авторизация'),
+        ('fan', 'Вентилятор'),
+        ('ventilation', 'Проветривание'),
     ]
 
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='commands')
     command_type = models.CharField(max_length=20, choices=COMMAND_CHOICES)
     value = models.CharField(max_length=100)  # Можно использовать другой тип в зависимости от команды
-    user_name = models.TextField(blank=True, null=True)
     timestamp = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.get_command_type_display()} - {self.value} at {self.timestamp}"
+        return f"{self.get_command_type_display()} - {self.value} by {self.user.username} at {self.timestamp}"
+
+
+from django.contrib.auth.models import User
+from django.db import models
+
+
+class Alert(models.Model):
+    ALERT_CHOICES = [
+        ('earthquake', 'Землетрясение'),
+        ('ventilation', 'Режим проветривания'),
+    ]
+
+    alert_type = models.CharField(max_length=20, choices=ALERT_CHOICES)
+    is_active = models.BooleanField(default=False)
+    timestamp = models.DateTimeField(auto_now_add=True)
+    received_from = models.CharField(max_length=255, blank=True, null=True)  # IP или идентификатор ESP-устройства
+
+    def __str__(self):
+        status = "Активно" if self.is_active else "Не активно"
+        return f"{self.get_alert_type_display()} - {status} at {self.timestamp}"

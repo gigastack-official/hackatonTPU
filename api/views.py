@@ -1,7 +1,10 @@
+from asgiref.sync import async_to_sync
 from rest_framework import viewsets, permissions, mixins
 from django.contrib.auth.models import User
 from rest_framework.decorators import action
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
+from rest_framework_simplejwt.views import TokenObtainPairView
 
 from .permissions import AllowCreateWithoutAuthentication, IsAdminUser
 from .serializers import (
@@ -20,7 +23,7 @@ from .serializers import (
     TemperatureSensorSerializer,
     GyroscopeSerializer,
     AccelerometerSerializer,
-    FanSerializer
+    FanSerializer, CustomTokenObtainPairSerializer, AlertSerializer
 )
 
 from drf_yasg.utils import swagger_auto_schema
@@ -31,7 +34,7 @@ from rest_framework import generics, status
 from .models import (
     LightSensor, ColorSensor, WaterFlowSensor, MoistureSensor, OverflowSensor,
     LeakSensor, LOSensor, ReedSwitch1, ReedSwitch2, DistanceSensor,
-    CurrentSensor, TemperatureSensor, Gyroscope, Accelerometer, Fan
+    CurrentSensor, TemperatureSensor, Gyroscope, Accelerometer, Fan, Command
 )
 from .filters import (
     LightSensorFilter,
@@ -72,7 +75,8 @@ class RegisterView(generics.CreateAPIView):
     def post(self, request, *args, **kwargs):
         return super().post(request, *args, **kwargs)
 
-
+class CustomTokenObtainPairView(TokenObtainPairView):
+    serializer_class = CustomTokenObtainPairSerializer
 # ViewSet для LightSensor
 class LightSensorViewSet(mixins.CreateModelMixin,
                          mixins.ListModelMixin,
@@ -751,6 +755,11 @@ class CommandView(APIView):
             'servo2': openapi.Schema(type=openapi.TYPE_BOOLEAN, description='Серво №2 включена/выключена'),
             'auto_light': openapi.Schema(type=openapi.TYPE_BOOLEAN, description='Авто-свет включен/выключен'),
             'brightness': openapi.Schema(type=openapi.TYPE_NUMBER, description='Яркость ленты'),
+            'fan': openapi.Schema(type=openapi.TYPE_BOOLEAN, description='Вентилятор включен/выключен'),
+            'ventilation': openapi.Schema(type=openapi.TYPE_BOOLEAN,
+                                          description='Режим проветривания включен/выключен'),
+            'earthquake': openapi.Schema(type=openapi.TYPE_BOOLEAN,
+                                         description='Землетрясение обнаружено/не обнаружено'),
             'user_name': openapi.Schema(type=openapi.TYPE_STRING, description='Текст авторизации'),
         },
         required=['authorization']
@@ -780,20 +789,23 @@ class CommandView(APIView):
         serializer = CommandSerializer(data=request.data)
         if serializer.is_valid():
             data = serializer.validated_data
-            user_name = data.get('user_name')
+            user_name = request.data.get("user_name")
+            user = request.user  # Получение текущего аутентифицированного пользователя
 
             # Список ESP-устройств (можно вынести в настройки)
-            esp_devices = [
-                "http://192.168.0.234:8000/command",
-                # Добавьте URL ваших ESP-устройств
-            ]
+            esp_devices = settings.ESP_DEVICES
 
-            # Формирование команд для отправки
+            # Формирование команд для отправки и сохранение в базе данных
             commands = {}
-            for key in ['pump', 'led', 'servo1', 'servo2', 'auto_light', 'brightness']:
+            for key in ['pump', 'led', 'servo1', 'servo2', 'auto_light', 'brightness', 'fan', 'ventilation', 'earthquake']:
                 if key in data:
                     commands[key] = data[key]
-
+                    # Сохранение команды в базе данных
+                    Command.objects.create(
+                        user=user,
+                        command_type=key,
+                        value=str(data[key])
+                    )
             commands['user_name'] = user_name
             # Отправка команд на ESP-устройства
             results = {}
@@ -808,5 +820,52 @@ class CommandView(APIView):
                     results[esp] = f"Error: {str(e)}"
 
             return Response({"results": results}, status=status.HTTP_200_OK)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+class AlertReceiveView(APIView):
+    """
+    Эндпоинт для приема событий от ESP-устройств.
+    """
+    permission_classes = [AllowAny]  # Разрешаем доступ без аутентификации
+
+    alert_schema = openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        properties={
+            'alert_type': openapi.Schema(type=openapi.TYPE_STRING, description='Тип события', enum=['earthquake', 'ventilation']),
+            'is_active': openapi.Schema(type=openapi.TYPE_BOOLEAN, description='Состояние события'),
+            'received_from': openapi.Schema(type=openapi.TYPE_STRING, description='Откуда получено событие'),
+        },
+        required=['alert_type', 'is_active']
+    )
+
+    @swagger_auto_schema(
+        request_body=alert_schema,
+        responses={
+            201: openapi.Response("Событие успешно создано", AlertSerializer),
+            400: "Неверные данные"
+        },
+        operation_description="Прием событий от ESP-устройств",
+        tags=["Alerts"],
+        security=[]  # Без авторизации
+    )
+    def post(self, request, format=None):
+        serializer = AlertSerializer(data=request.data)
+        if serializer.is_valid():
+            alert = serializer.save()
+            # Отправка уведомления через Channels
+            channel_layer = get_channel_layer()
+            async_to_sync(channel_layer.group_send)(
+                "alerts",  # Название группы
+                {
+                    "type": "alert_message",
+                    "message": {
+                        "alert_type": alert.get_alert_type_display(),
+                        "is_active": alert.is_active,
+                        "timestamp": alert.timestamp.isoformat(),
+                        "received_from": alert.received_from,
+                    }
+                }
+            )
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
