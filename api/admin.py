@@ -1,7 +1,7 @@
 from django.contrib import admin
+from .models import Sensor, Device, Measurement, LightingMode
 
-# Register your models here.
-from django.contrib import admin
-from .models import Post
-
-admin.site.register(Post)
+admin.site.register(Sensor)
+admin.site.register(Device)
+admin.site.register(Measurement)
+admin.site.register(LightingMode)
