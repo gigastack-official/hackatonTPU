@@ -2,7 +2,7 @@ from rest_framework.permissions import BasePermission, SAFE_METHODS
 
 class IsAdminUser(BasePermission):
     def has_permission(self, request, view):
-        return request.user and request.user.is_authenticated and request.user.groups.filter(name='admin').exists()
+        return request.user and request.user.is_authenticated and request.user.groups.filtçer(name='admin').exists()
 
 class IsAuthenticatedOrReadOnly(BasePermission):
     def has_permission(self, request, view):
