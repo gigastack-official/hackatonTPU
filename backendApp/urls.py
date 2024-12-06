@@ -6,7 +6,7 @@ from drf_yasg import openapi
 
 schema_view = get_schema_view(
    openapi.Info(
-      title="My API",
+      title="hackatonTPU API",
       default_version='v1',
       description="Документация API для проекта hackatonTPU",
       terms_of_service="https://www.google.com/policies/terms/",
@@ -15,7 +15,7 @@ schema_view = get_schema_view(
    ),
    public=True,
    permission_classes=[permissions.AllowAny],
-   authentication_classes=[],
+   authentication_classes=[],  # Убедитесь, что аутентификация не требуется для просмотра документации
 )
 
 urlpatterns = [
