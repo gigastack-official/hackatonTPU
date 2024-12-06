@@ -160,3 +160,11 @@ SWAGGER_SETTINGS = {
         }
     },
 }
+
+COMMAND_AUTH_TEXT = 'your_secret_auth_text'
+
+# Список ESP-устройств
+ESP_DEVICES = [
+    "http://192.168.0.100/command",
+    # Добавьте остальные устройства
+]
