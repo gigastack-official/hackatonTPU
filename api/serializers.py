@@ -19,6 +19,9 @@ class UserSerializer(serializers.ModelSerializer):
         return user
 
 class SensorSerializer(serializers.ModelSerializer):
+    """
+       Сериализатор для модели Sensor, используемый для отображения и создания датчиков.
+    """
     class Meta:
         model = Sensor
         fields = '__all__'

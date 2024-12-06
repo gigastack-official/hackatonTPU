@@ -3,6 +3,9 @@ from django.contrib.auth.models import User
 
 # Пример модели датчика
 class Sensor(models.Model):
+    """
+        Модель датчика, содержащая параметры сенсора для мониторинга различных показателей.
+    """
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True)
     # Параметры датчика (приведены в качестве примера)

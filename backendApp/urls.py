@@ -8,14 +8,14 @@ schema_view = get_schema_view(
    openapi.Info(
       title="My API",
       default_version='v1',
-      description="Документация API",
+      description="Документация API для проекта hackatonTPU",
       terms_of_service="https://www.google.com/policies/terms/",
       contact=openapi.Contact(email="contact@yourdomain.com"),
       license=openapi.License(name="BSD License"),
    ),
    public=True,
    permission_classes=[permissions.AllowAny],
-    authentication_classes=[],
+   authentication_classes=[],
 )
 
 urlpatterns = [
