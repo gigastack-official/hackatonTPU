@@ -1,4 +1,5 @@
 from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 from rest_framework import viewsets, permissions, mixins
 from django.contrib.auth.models import User
 from rest_framework.decorators import action
@@ -23,7 +24,7 @@ from .serializers import (
     TemperatureSensorSerializer,
     GyroscopeSerializer,
     AccelerometerSerializer,
-    FanSerializer, CustomTokenObtainPairSerializer, AlertSerializer
+    FanSerializer, CustomTokenObtainPairSerializer, AlertSerializer, DeviceStateSerializer
 )
 
 from drf_yasg.utils import swagger_auto_schema
@@ -869,3 +870,37 @@ class AlertReceiveView(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class DeviceStateView(APIView):
+    """
+    Эндпоинт для получения текущих состояний девайсов.
+    """
+    permission_classes = [permissions.AllowAny]  # Настройте разрешения при необходимости
+
+    def get(self, request, format=None):
+        # Определяем типы девайсов
+        device_types = ['pump', 'led', 'servo1', 'servo2', 'auto_light', 'brightness', 'fan', 'ventilation',
+                        'earthquake']
+
+        state = {}
+        for device in device_types:
+            latest_command = Command.objects.filter(command_type=device).order_by('-timestamp').first()
+            if latest_command:
+                # Обработка значений в зависимости от типа девайса
+                if device == 'brightness':
+                    try:
+                        state[device] = float(latest_command.value)
+                    except ValueError:
+                        state[device] = 0.0  # Значение по умолчанию при ошибке
+                else:
+                    # Предполагаем, что остальные девайсы имеют булевое значение
+                    state[device] = latest_command.value.lower() == 'true'
+            else:
+                # Значения по умолчанию, если команды еще не были отправлены
+                if device == 'brightness':
+                    state[device] = 0.0
+                else:
+                    state[device] = False
+        serializer = DeviceStateSerializer(state)
+        return Response(serializer.data, status=status.HTTP_200_OK)

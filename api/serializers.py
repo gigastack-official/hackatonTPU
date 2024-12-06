@@ -140,3 +140,16 @@ class AlertSerializer(serializers.ModelSerializer):
         model = Alert
         fields = ['alert_type', 'is_active', 'received_from']
         read_only_fields = ['timestamp']
+
+from rest_framework import serializers
+
+class DeviceStateSerializer(serializers.Serializer):
+    pump = serializers.BooleanField()
+    led = serializers.BooleanField()
+    servo1 = serializers.BooleanField()
+    servo2 = serializers.BooleanField()
+    auto_light = serializers.BooleanField()
+    brightness = serializers.FloatField()
+    fan = serializers.BooleanField()
+    ventilation = serializers.BooleanField()
+    earthquake = serializers.BooleanField()

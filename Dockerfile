@@ -20,11 +20,14 @@ RUN pip install -r requirements.txt
 # Копируем весь код проекта в рабочую директорию
 COPY . .
 
+# Создаем директорию для статических файлов
+RUN mkdir -p /app/staticfiles
+
 # Собираем статические файлы
 RUN python manage.py collectstatic --noinput
 
 # Открываем порт, который будет использоваться приложением
 EXPOSE 8000
 
-# Определяем команду для запуска приложения
-CMD ["gunicorn", "backendApp.wsgi:application", "--bind", "0.0.0.0:8000"]
+# Определяем команду для запуска приложения с использованием Daphne
+CMD ["daphne", "-b", "0.0.0.0", "-p", "8000", "backendApp.asgi:application"]

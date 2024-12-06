@@ -144,7 +144,7 @@ from django.db import models
 
 class Alert(models.Model):
     ALERT_CHOICES = [
-        ('earthquake', 'Землетрясение'),
+        ('earthquake', 'Земtags=["DeviceState"],летрясение'),
         ('ventilation', 'Режим проветривания'),
     ]
 
