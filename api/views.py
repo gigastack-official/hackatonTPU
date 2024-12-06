@@ -801,25 +801,31 @@ class CommandView(APIView):
             for key in ['pump', 'led', 'servo1', 'servo2', 'auto_light', 'brightness', 'fan', 'ventilation', 'earthquake']:
                 if key in data:
                     commands[key] = data[key]
-                    # Сохранение команды в базе данных
-                    Command.objects.create(
-                        user=user,
-                        command_type=key,
-                        value=str(data[key])
-                    )
             commands['user_name'] = user_name
             # Отправка команд на ESP-устройства
             results = {}
+            espIsActive = True
             for esp in esp_devices:
                 try:
                     response = requests.post(esp, json=commands, timeout=5)
                     if response.status_code == 200:
                         results[esp] = "Success"
+                        for key in ['pump', 'led', 'servo1', 'servo2', 'auto_light', 'brightness', 'fan', 'ventilation',
+                                    'earthquake']:
+                            if key in data:
+                                Command.objects.create(
+                                    user=user,
+                                    command_type=key,
+                                    value=str(data[key])
+                                )
                     else:
+                        espIsActive = False
                         results[esp] = f"Failed with status {response.status_code}"
                 except requests.exceptions.RequestException as e:
+                    espIsActive = False
                     results[esp] = f"Error: {str(e)}"
-
+            if not espIsActive:
+                return Response("Пиздец", status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             return Response({"results": results}, status=status.HTTP_200_OK)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
