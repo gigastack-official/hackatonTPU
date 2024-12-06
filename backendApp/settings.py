@@ -81,7 +81,7 @@ WSGI_APPLICATION = 'backendApp.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'authTemplateDjango',
+        'NAME': 'hacatonTPU',
         'USER': 'postgres',
         'PASSWORD': '',
         'HOST': 'localhost',
